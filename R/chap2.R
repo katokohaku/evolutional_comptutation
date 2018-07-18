@@ -12,10 +12,7 @@ N           = 64   # size of problem (= number of element)
 # individual --------------------------------------------------------------
 
 individual <- function(N){
-  stopifnot(N > 1)
-  
-  chrom <- sample(c(0,1), N, replace=TRUE)
-  return(chrom)  
+  sample(c(0,1), N, replace=TRUE)
 }
 # example
 (ind1 <- individual(64))
@@ -91,6 +88,7 @@ initPopulation <- function(pop.size, chrom.size){
 # pop.size = POP_SIZE
 # # Preserve elite individuals
 # nextInd.pres <- population %>% head(ELITE)
+# nextInd.pres %>% head %>% print()
 # 
 # # Generate children via: selection -> crossover -> mutation
 # # roulette source based on rank for selection
@@ -103,7 +101,6 @@ initPopulation <- function(pop.size, chrom.size){
 #   p2 <- sample(denom, 1)
 #   while(p1 == p2){
 #     p2 <- sample(denom, 1)
-#     # print(p2)  
 #   }
 #   crossover(population$chrom[p1] %>% unlist,
 #             population$chrom[p2] %>% unlist)
@@ -122,13 +119,13 @@ initPopulation <- function(pop.size, chrom.size){
 # popuration function -----------------------------------------------------
 
 alternate <- function(population, elite.size, mutate.prob = 0.01){
-  stopifnot(!missing(population), NROW(population) > elite.size )
+  stopifnot(!missing(population), 
+            NROW(population) > elite.size )
   
   # Preserve elite individuals
   nextInd.pres <- population %>%
     arrange(fits) %>% 
     head(elite.size)
-  # nextInd.pres %>% head %>% print()
   
   # Generate children via: selection -> crossover -> mutation
   # roulette source based on rank for selection
@@ -141,7 +138,6 @@ alternate <- function(population, elite.size, mutate.prob = 0.01){
     p2 <- sample(denom, 1)
     while(p1 == p2){
       p2 <- sample(denom, 1)
-      # print(p2)  
     }
     crossover(population$chrom[p1] %>% unlist,
               population$chrom[p2] %>% unlist)
@@ -155,10 +151,13 @@ alternate <- function(population, elite.size, mutate.prob = 0.01){
   return( rbind(nextInd.pres, nextInd.gen) )
 }
 
-(pop <- initPopulation(pop.size = 150, chrom.size = 500))
+
+# exec --------------------------------------------------------------------
+set.seed(6)
+pop <- initPopulation(pop.size = 150, chrom.size = 500)
 topTeam <- pop %>% head(1)
 
-for(i in 2:50){
+for(i in 2:30){
   nextpop <- alternate(pop, elite.size = 10, mutate.prob = 0.05)
   topTeam[i, ] <- pop %>% head(1)
 
