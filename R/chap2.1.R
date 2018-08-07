@@ -84,25 +84,6 @@ c3 <- rep(1, 100)
 mutation(c3, 0.05)
 
 # population --------------------------------------------------------------
-
-initPopulation <- function(pop.size, chrom.size){
-  stopifnot(!missing(pop.size), !missing(chrom.size))
-  
-  population <- tibble(
-    chrom = foreach(i = 1:pop.size) %do% individual(chrom.size))
-  
-  population$pheno <- sapply(population$chrom, bin2dec)
-  population$fits  <- sapply(population$pheno, fitnessCurve)
-  
-  return(population %>% arrange(desc(fits)))
-}
-
-
-GEN_MAX     = 100  # number of generation
-POP_SIZE    = 100  # population size
-ELITE       = 10   # number of elite individual for next chromration
-MUTATE_PROB = 0.01 # mutation rate
-N           = 64   # size of problem (= number of element)
 # 
 # population <- initPopulation(pop.size = POP_SIZE, chrom.size = N)
 # population
@@ -139,6 +120,19 @@ N           = 64   # size of problem (= number of element)
 # population %>% head()
 
 # popuration function -----------------------------------------------------
+
+initPopulation <- function(pop.size, chrom.size){
+  stopifnot(!missing(pop.size), !missing(chrom.size))
+  
+  population <- tibble(
+    chrom = foreach(i = 1:pop.size) %do% individual(chrom.size))
+  
+  population$pheno <- sapply(population$chrom, bin2dec)
+  population$fits  <- sapply(population$pheno, fitnessCurve)
+  
+  return(population %>% arrange(desc(fits)))
+}
+
 
 alternate <- function(population, elite.size, mutate.prob = 0.01){
   stopifnot(!missing(population), 
@@ -181,12 +175,19 @@ alternate <- function(population, elite.size, mutate.prob = 0.01){
 set.seed(6)
 start_time <- Sys.time()
 
-generation <- list(NULL)
-pop <- initPopulation(pop.size = 20, chrom.size = 64)
 
-for(i in 1:30){
+GEN_MAX     = 30  # number of generation
+POP_SIZE    = 20  # population size
+CHROM_SIZE  = 64   # size of problem
+N_ELITE     = 5   # number of elite individual for next chromration
+MUTATE_PROB = 0.05 # mutation rate
+
+generation <- list(NULL)
+pop <- initPopulation(pop.size = POP_SIZE, chrom.size = CHROM_SIZE)
+
+for(i in 1:GEN_MAX){
   generation[[i]] <- pop
-  pop <- alternate(pop, elite.size = 2, mutate.prob = 0.05)
+  pop <- alternate(pop, elite.size = N_ELITE, mutate.prob = MUTATE_PROB)
 }
 
 
@@ -201,10 +202,17 @@ bin2dec(rep(1,64), norm=F)
 X <- seq(0,1,1e-4); Y=fitnessCurve(X)
 
 
-top5 <- generation[[1]] %>% head(5)
+library("animation")
+
+g=2
+
+par(mfrow = c(1,2))
+top5 <- generation[[g]]
 plot(x=X, y=Y, type="l")
 points(x=X[which.max(Y)], max(Y), col="red", pch = 4)
-points(x=top5$pheno, y=top5$fits, col=6, pch=16)
+
+points(x=top5$pheno, y=top5$fits, col=6, pch=1)
+points(x=top5$pheno[1], y=top5$fits[1], col=6, pch=16)
 
 
 
@@ -216,7 +224,19 @@ for(i in 1:length(generation)){
 
 plot(fits~gen, top1, type="b",ylim=c(7.5,10))
 abline(h=max(Y), lty = 2, col=3)
-top1;max(Y)
+points(x=g, y=top1$fits[g], col=2, pch=16)
+# top1;max(Y)
 
+par(mfrow = c(1,1))
 Sys.time() - start_time
+
+
+saveGIF({
+  #ŒJ‚è•Ô‚µ‰ñ”‚ðÝ’è‚·‚é 
+  for (i in 1:5){
+    #ˆ—“à—e‚ð‹Lq‚·‚é
+    plot(runif(10), ylim = c(0,1))
+  }
+}, interval = 1.0, movie.name = "TEST.gif")
+
 
