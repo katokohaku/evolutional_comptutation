@@ -1,3 +1,5 @@
+# 
+# http://www.obitko.com/tutorials/genetic-algorithms/japanese/index.php
 require(dplyr)
 require(magrittr)
 require(foreach)

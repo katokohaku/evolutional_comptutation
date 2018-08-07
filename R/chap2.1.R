@@ -1,4 +1,6 @@
-# get argmax(f(x)) 
+# GA for getting argmax(f(x)) 
+# http://www.obitko.com/tutorials/genetic-algorithms/japanese/index.php
+
 require(dplyr)
 require(magrittr)
 require(foreach)
@@ -15,7 +17,7 @@ individual <- function(N){
 
 fitnessCurve <- function(x){
   return(
-    4*sin(25*x-1) + 6*sin(1- 10*x)
+    2*sin(29*x-1) + 5*sin(1- 8*x) + 3*sin(1- 70*x)
   )
 }
 
@@ -84,26 +86,35 @@ c3 <- rep(1, 100)
 mutation(c3, 0.05)
 
 # population --------------------------------------------------------------
+# GEN_MAX     = 15  # number of generation
+# POP_SIZE    = 10  # population size
+# CHROM_SIZE  = 64   # size of problem
+# N_ELITE     = 5   # number of elite individual for next chromration
+# MUTATE_PROB = 0.05 # mutation rate
+
+# population <- tibble(
+# chrom = foreach(i = 1:POP_SIZE) %do% individual(CHROM_SIZE))
 # 
-# population <- initPopulation(pop.size = POP_SIZE, chrom.size = N)
-# population
+# population$pheno <- sapply(population$chrom, bin2dec)
+# population$fits  <- sapply(population$pheno, fitnessCurve)
 # 
-# pop.size = POP_SIZE
-# # Preserve elite individuals
-# nextInd.elite <- population %>% head(ELITE)
+# population %<>% arrange(desc(fits))
+# 
+# Preserve elite individuals
+# nextInd.elite <- population %>% head(N_ELITE)
 # nextInd.elite %>% head %>% print()
 # 
 # # Generate children via: selection -> crossover -> mutation
 # # roulette source based on rank for selection
 # x <- 1:NROW(population)
-# denom <- foreach(i = x, .combine = c) %do% rep(x[i], rev(x)[i])
+# pool <- foreach(i = x, .combine = c) %do% rep(x[i], rev(x)[i])
 # 
 # # selection -> crossover
 # nextChrom <- foreach(i = (ELITE+1):pop.size) %do% {
-#   p1 <- sample(denom, 1)
-#   p2 <- sample(denom, 1)
+#   p1 <- sample(pool, 1)
+#   p2 <- sample(pool, 1)
 #   while(p1 == p2){
-#     p2 <- sample(denom, 1)
+#     p2 <- sample(pool, 1)
 #   }
 #   crossover(population$chrom[p1] %>% unlist,
 #             population$chrom[p2] %>% unlist)
@@ -146,14 +157,14 @@ alternate <- function(population, elite.size, mutate.prob = 0.01){
   # Generate children via: selection -> crossover -> mutation
   # roulette source based on rank for selection
   x <- 1:NROW(population)
-  denom <- foreach(i = x, .combine = c) %do% rep(x[i], rev(x)[i])
+  pool <- foreach(i = x, .combine = c) %do% rep(x[i], rev(x)[i])
   
   # selection -> crossover
   nextChrom <- foreach(i = (elite.size+1):NROW(population)) %do% {
-    p1 <- sample(denom, 1)
-    p2 <- sample(denom, 1)
+    p1 <- sample(pool, 1)
+    p2 <- sample(pool, 1)
     while(p1 == p2){
-      p2 <- sample(denom, 1)
+      p2 <- sample(pool, 1)
     }
     crossover(population$chrom[p1] %>% unlist,
               population$chrom[p2] %>% unlist)
@@ -175,10 +186,9 @@ alternate <- function(population, elite.size, mutate.prob = 0.01){
 set.seed(6)
 start_time <- Sys.time()
 
-
-GEN_MAX     = 30  # number of generation
-POP_SIZE    = 20  # population size
-CHROM_SIZE  = 64   # size of problem
+GEN_MAX     = 20  # number of generation
+POP_SIZE    = 100  # population size
+CHROM_SIZE  = 16   # size of problem
 N_ELITE     = 5   # number of elite individual for next chromration
 MUTATE_PROB = 0.05 # mutation rate
 
@@ -190,53 +200,48 @@ for(i in 1:GEN_MAX){
   pop <- alternate(pop, elite.size = N_ELITE, mutate.prob = MUTATE_PROB)
 }
 
-
-X <- seq(0,1,1e-5); Y=fitnessCurve(X)
-plot(x=X, y=Y, type="l")
-points(x=X[which.max(Y)], max(Y), col="red")
-
-bin2dec(rep(1,64), norm=F)
-
-# generation %>% str(2)
-
-X <- seq(0,1,1e-4); Y=fitnessCurve(X)
-
-
-library("animation")
-
-g=2
-
-par(mfrow = c(1,2))
-top5 <- generation[[g]]
-plot(x=X, y=Y, type="l")
-points(x=X[which.max(Y)], max(Y), col="red", pch = 4)
-
-points(x=top5$pheno, y=top5$fits, col=6, pch=1)
-points(x=top5$pheno[1], y=top5$fits[1], col=6, pch=16)
-
-
-
 top1 <- NULL
 for(i in 1:length(generation)){
   this <- generation[[i]]
   top1 <- rbind(top1, data.frame(gen=i, fits=this$fits[1]))
 }
 
-plot(fits~gen, top1, type="b",ylim=c(7.5,10))
-abline(h=max(Y), lty = 2, col=3)
-points(x=g, y=top1$fits[g], col=2, pch=16)
-# top1;max(Y)
-
-par(mfrow = c(1,1))
+top1$diff <- max(Y) - top1$fits
 Sys.time() - start_time
 
 
+# plot & print --------------------------------------------------------------
+library("animation")
+X <- seq(0,1,1e-4); Y=fitnessCurve(X)
+
 saveGIF({
-  #ŒJ‚è•Ô‚µ‰ñ”‚ðÝ’è‚·‚é 
-  for (i in 1:5){
-    #ˆ—“à—e‚ð‹Lq‚·‚é
-    plot(runif(10), ylim = c(0,1))
+  
+  for(g in 1:length(generation)){
+    par(mfrow = c(1,2))
+    
+    top5 <- generation[[g]]
+    plot(x=X, y=Y, type="l",
+         main = sprintf("generation = %i", g))
+    points(x=X[which.max(Y)], max(Y), col="red", pch = 4)
+    points(x=top5$pheno, y=top5$fits, col=6, pch=1)
+    points(x=top5$pheno[1], y=top5$fits[1], col=6, pch=16)
+
+    plot(fits~gen, top1, type="b",
+         main = sprintf("generation = %i (diff = %f",
+                        g, top1$diff[g]))
+    abline(h=max(Y), col=3)
+    points(x=g, y=top1$fits[g], pch=16,
+           col=ifelse(top1$diff[g]>0,"green","red"))
+    # top1;max(Y)
+    
+    par(mfrow = c(1,1))
+    
   }
-}, interval = 1.0, movie.name = "TEST.gif")
+}, interval = 1.5, movie.name = "stepGA.gif", ani.width=960, ani.height=480)
+
+
+bin2dec(rep(1,CHROM_SIZE), norm=F)
+print(top1)
+
 
 
