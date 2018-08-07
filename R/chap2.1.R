@@ -1,3 +1,4 @@
+# get argmax(f(x)) 
 require(dplyr)
 require(magrittr)
 require(foreach)
@@ -12,16 +13,41 @@ individual <- function(N){
 # example
 (ind1 <- individual(64))
 
-
-fitness <- function(chrom){
-  stopifnot(all(chrom %in% c(0,1)) == TRUE)
+fitnessCurve <- function(x){
   return(
-    sum((chrom *2 -1) * seq_along(chrom)^0.5) %>% abs
+    4*sin(25*x-1) + 6*sin(1- 10*x)
   )
 }
+
+X <- seq(0,1,0.001); Y=fitnessCurve(X)
+plot(x=X, y=Y, type="l")
+points(x=X[which.max(Y)], max(Y), col="red")
+
+bin2dec <- function(chrom, norm = TRUE){
+  stopifnot(all(chrom %in% c(0,1)) == TRUE)
+  dec <- sum(2^(1:length(chrom) -1) * chrom)
+  if(norm == TRUE){
+    dec <- dec / sum(2^(1:length(chrom) -1))
+  }
+  
+  return(dec)
+}
+
+
 # example
 (ind1 <- individual(64))
-fitness(ind1)
+fitnessCurve( bin2dec(ind1))
+
+
+# fitness <- function(chrom){
+#   stopifnot(all(chrom %in% c(0,1)) == TRUE)
+#   return(
+#     sum((chrom *2 -1) * seq_along(chrom)^0.5) %>% abs
+#   )
+# }
+# # example
+# (ind1 <- individual(64))
+# fitness(ind1)
 
 
 crossover <- function(p1, p2, show.pos = FALSE){
@@ -65,9 +91,10 @@ initPopulation <- function(pop.size, chrom.size){
   population <- tibble(
     chrom = foreach(i = 1:pop.size) %do% individual(chrom.size))
   
-  population$fits <- sapply(population$chrom, fitness)
+  population$pheno <- sapply(population$chrom, bin2dec)
+  population$fits  <- sapply(population$pheno, fitnessCurve)
   
-  return(population %>% arrange(fits))
+  return(population %>% arrange(desc(fits)))
 }
 
 
@@ -82,8 +109,8 @@ N           = 64   # size of problem (= number of element)
 # 
 # pop.size = POP_SIZE
 # # Preserve elite individuals
-# nextInd.pres <- population %>% head(ELITE)
-# nextInd.pres %>% head %>% print()
+# nextInd.elite <- population %>% head(ELITE)
+# nextInd.elite %>% head %>% print()
 # 
 # # Generate children via: selection -> crossover -> mutation
 # # roulette source based on rank for selection
@@ -106,7 +133,7 @@ N           = 64   # size of problem (= number of element)
 #   chrom = lapply(nextChrom, mutation, mutate.prob = MUTATE_PROB))
 # nextInd.gen$fits <- sapply(nextInd.gen$chrom, fitness)
 # 
-# population <- bind_rows(nextInd.pres, nextInd.gen) %>% 
+# population <- bind_rows(nextInd.elite, nextInd.gen) %>% 
 #   arrange(fits) 
 # 
 # population %>% head()
@@ -118,8 +145,8 @@ alternate <- function(population, elite.size, mutate.prob = 0.01){
             NROW(population) > elite.size )
   
   # Preserve elite individuals
-  nextInd.pres <- population %>%
-    arrange(fits) %>% 
+  nextInd.elite <- population %>%
+    arrange(desc(fits)) %>% 
     head(elite.size)
   
   # Generate children via: selection -> crossover -> mutation
@@ -141,27 +168,55 @@ alternate <- function(population, elite.size, mutate.prob = 0.01){
   # mutation
   nextInd.gen <- tibble(
     chrom = lapply(nextChrom, mutation, mutate.prob = mutate.prob))
-  nextInd.gen$fits <- sapply(nextInd.gen$chrom, fitness)
   
-  return( rbind(nextInd.pres, nextInd.gen) )
+  nextInd.gen$pheno <- sapply(nextInd.gen$chrom, bin2dec)
+  nextInd.gen$fits  <- sapply(nextInd.gen$pheno, fitnessCurve)
+  
+  nextGen.all <- rbind(nextInd.elite, nextInd.gen) %>% arrange(desc(fits))
+  return(nextGen.all)
 }
 
 
 # exec --------------------------------------------------------------------
 set.seed(6)
 start_time <- Sys.time()
-pop <- initPopulation(pop.size = 150, chrom.size = 500)
-topTeam <- pop %>% head(1)
 
-for(i in 2:30){
-  nextpop <- alternate(pop, elite.size = 10, mutate.prob = 0.05)
-  topTeam[i, ] <- pop %>% head(1)
-  
-  pop <- nextpop
+generation <- list(NULL)
+pop <- initPopulation(pop.size = 20, chrom.size = 64)
+
+for(i in 1:30){
+  generation[[i]] <- pop
+  pop <- alternate(pop, elite.size = 2, mutate.prob = 0.05)
 }
 
-plot(x=1:length(topTeam$fits), y=topTeam$fits,
-     type="b", xlab = "generation", ylab = "fitness")
+
+X <- seq(0,1,1e-5); Y=fitnessCurve(X)
+plot(x=X, y=Y, type="l")
+points(x=X[which.max(Y)], max(Y), col="red")
+
+bin2dec(rep(1,64), norm=F)
+
+# generation %>% str(2)
+
+X <- seq(0,1,1e-4); Y=fitnessCurve(X)
+
+
+top5 <- generation[[1]] %>% head(5)
+plot(x=X, y=Y, type="l")
+points(x=X[which.max(Y)], max(Y), col="red", pch = 4)
+points(x=top5$pheno, y=top5$fits, col=6, pch=16)
+
+
+
+top1 <- NULL
+for(i in 1:length(generation)){
+  this <- generation[[i]]
+  top1 <- rbind(top1, data.frame(gen=i, fits=this$fits[1]))
+}
+
+plot(fits~gen, top1, type="b",ylim=c(7.5,10))
+abline(h=max(Y), lty = 2, col=3)
+top1;max(Y)
 
 Sys.time() - start_time
 
