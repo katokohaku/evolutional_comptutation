@@ -296,11 +296,11 @@ plot.trip <- function(trip, .cities){
   travel <- data.frame(id = trip) %>% 
     left_join(.cities, by="id") %>% 
     slice(c(1:NROW(.), 1))
-  print(trip)
-  print(travel)
+  # print(trip)
+  # print(travel)
   
   total.distance <- fitness(trip, .cities)
-  print(total.distance)
+  # print(total.distance)
   
   # plot travelling orders
   plot(y~x, travel[-1,], cex=1.5, 
@@ -320,12 +320,11 @@ plot.trip <- function(trip, .cities){
 
 # exec --------------------------------------------------------------------
 set.seed(7)
-N_CITIES    = 20  # number of cities to travel
-GEN_MAX     = 200  # number of generation
-POP_SIZE    = 150  # population size
+N_CITIES    = 25  # number of cities to travel
+GEN_MAX     = 600  # number of generation
+POP_SIZE    = 50  # population size
 N_ELITE     = 5   # number of elite individual for next chromration
-MUTATE_PROB = 0.8 # mutation rate
-mesh <- seq(0,1,1e-4)
+MUTATE_PROB = 1.0 # mutation rate
 
 (cities <- setCities(N_CITIES))
 sample.trip <- individual(cities)
@@ -356,11 +355,27 @@ top1
 
 Sys.time() - start_time
 
-top1[GEN_MAX, ]$chrom
-this.trip <- unlist(top1$chrom[GEN_MAX])
 
-par(mfrow=c(1,2))
-plot(fits~gen, top1, type = "b")
-plot.trip(this.trip, cities)
-par(mfrow=c(1,1))
+# plot & print --------------------------------------------------------------
+library("animation")
+saveGIF({
+  
+  for(g in 1:length(generation)){
+    par(mfrow = c(1,2))
+    
+    this.trip <- unlist(top1$chrom[g])
+    plot.trip(this.trip, cities)
+    
+    plot(fits~gen, top1, type="b",
+         main = sprintf("generation = %i (fits = %f)", g, top1$fits[g]))
+    points(x=g, y=top1$fits[g], pch=16, col="red", cex=1.5)
+    # top1;max(Y)
+    
+    par(mfrow = c(1,1))
+  }
+}, interval = 0.4, movie.name = "stepGA.gif", ani.width=640, ani.height=320)
+
+
+print(top1)
+
 
