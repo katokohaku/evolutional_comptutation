@@ -5,8 +5,6 @@ require(dplyr)
 require(magrittr)
 require(foreach)
 
-
-
 # individual --------------------------------------------------------------
 
 individual <- function(N){
@@ -20,10 +18,12 @@ fitnessCurve <- function(x){
     2*sin(29*x-1) + 5*sin(1- 8*x) + 3*sin(1- 70*x)
   )
 }
+# example
 
-X <- seq(0,1,0.001); Y=fitnessCurve(X)
+
+X <- seq(0,1,0.001)
+Y <- fitnessCurve(X)
 plot(x=X, y=Y, type="l")
-points(x=X[which.max(Y)], max(Y), col="red")
 
 bin2dec <- function(chrom, norm = TRUE){
   stopifnot(all(chrom %in% c(0,1)) == TRUE)
@@ -34,22 +34,9 @@ bin2dec <- function(chrom, norm = TRUE){
   
   return(dec)
 }
-
-
 # example
 (ind1 <- individual(64))
 fitnessCurve( bin2dec(ind1))
-
-
-# fitness <- function(chrom){
-#   stopifnot(all(chrom %in% c(0,1)) == TRUE)
-#   return(
-#     sum((chrom *2 -1) * seq_along(chrom)^0.5) %>% abs
-#   )
-# }
-# # example
-# (ind1 <- individual(64))
-# fitness(ind1)
 
 
 crossover <- function(p1, p2, show.pos = FALSE){
@@ -82,16 +69,18 @@ mutation <- function(chrom, mutate.prob){
   return(chrom)
 }
 # example
-c3 <- rep(1, 100)
-mutation(c3, 0.05)
+chr3 <- rep(1, 100)
+mutation(chr3, 0.05)
 
 # population --------------------------------------------------------------
+# 
 # GEN_MAX     = 15  # number of generation
 # POP_SIZE    = 10  # population size
 # CHROM_SIZE  = 64   # size of problem
 # N_ELITE     = 5   # number of elite individual for next chromration
+# N_TOURNAMEST= 5   # number of individual for tournament selection
 # MUTATE_PROB = 0.05 # mutation rate
-
+# 
 # population <- tibble(
 # chrom = foreach(i = 1:POP_SIZE) %do% individual(CHROM_SIZE))
 # 
@@ -100,35 +89,32 @@ mutation(c3, 0.05)
 # 
 # population %<>% arrange(desc(fits))
 # 
-# Preserve elite individuals
+# # Preserve elite individuals
 # nextInd.elite <- population %>% head(N_ELITE)
 # nextInd.elite %>% head %>% print()
 # 
-# # Generate children via: selection -> crossover -> mutation
-# # roulette source based on rank for selection
-# x <- 1:NROW(population)
-# pool <- foreach(i = x, .combine = c) %do% rep(x[i], rev(x)[i])
-# 
-# # selection -> crossover
-# nextChrom <- foreach(i = (ELITE+1):pop.size) %do% {
-#   p1 <- sample(pool, 1)
-#   p2 <- sample(pool, 1)
-#   while(p1 == p2){
-#     p2 <- sample(pool, 1)
-#   }
-#   crossover(population$chrom[p1] %>% unlist,
-#             population$chrom[p2] %>% unlist)
+# # Generate new children
+# # tournament selection -> crossover
+# nextChrom <- foreach(i = (N_ELITE+1):NROW(population)) %do% {
+#   parents <- population %>% 
+#     sample_n(N_TOURNAMEST) %>% 
+#     arrange(desc(fits)) %>% 
+#     head(2)
+#   crossover(parents$chrom[1] %>% unlist,
+#             parents$chrom[2] %>% unlist)
 # }
 # 
 # # mutation
 # nextInd.gen <- tibble(
 #   chrom = lapply(nextChrom, mutation, mutate.prob = MUTATE_PROB))
-# nextInd.gen$fits <- sapply(nextInd.gen$chrom, fitness)
 # 
-# population <- bind_rows(nextInd.elite, nextInd.gen) %>% 
-#   arrange(fits) 
+# nextInd.gen$pheno <- sapply(nextInd.gen$chrom, bin2dec)
+# nextInd.gen$fits  <- sapply(nextInd.gen$pheno, fitnessCurve)
 # 
-# population %>% head()
+# nextGen.all <- rbind(nextInd.elite, nextInd.gen) %>% 
+#   arrange(desc(fits))
+# 
+# nextGen.all
 
 # popuration function -----------------------------------------------------
 
@@ -145,7 +131,7 @@ initPopulation <- function(pop.size, chrom.size){
 }
 
 
-alternate <- function(population, elite.size, mutate.prob = 0.01){
+alternate <- function(population, elite.size, tournament.size, mutate.prob = 0.01){
   stopifnot(!missing(population), 
             NROW(population) > elite.size )
   
@@ -154,20 +140,15 @@ alternate <- function(population, elite.size, mutate.prob = 0.01){
     arrange(desc(fits)) %>% 
     head(elite.size)
   
-  # Generate children via: selection -> crossover -> mutation
-  # roulette source based on rank for selection
-  x <- 1:NROW(population)
-  pool <- foreach(i = x, .combine = c) %do% rep(x[i], rev(x)[i])
-  
-  # selection -> crossover
+  # Generate new children
+  # tournament selection -> crossover
   nextChrom <- foreach(i = (elite.size+1):NROW(population)) %do% {
-    p1 <- sample(pool, 1)
-    p2 <- sample(pool, 1)
-    while(p1 == p2){
-      p2 <- sample(pool, 1)
-    }
-    crossover(population$chrom[p1] %>% unlist,
-              population$chrom[p2] %>% unlist)
+    parents <- population %>% 
+      sample_n(tournament.size) %>% 
+      arrange(desc(fits)) %>% 
+      head(2)
+    crossover(parents$chrom[1] %>% unlist,
+              parents$chrom[2] %>% unlist)
   }
   
   # mutation
@@ -190,6 +171,7 @@ GEN_MAX     = 20  # number of generation
 POP_SIZE    = 100  # population size
 CHROM_SIZE  = 16   # size of problem
 N_ELITE     = 5   # number of elite individual for next chromration
+N_TOURNAMEST= 5   # number of individual for tournament selection
 MUTATE_PROB = 0.05 # mutation rate
 
 generation <- list(NULL)
@@ -197,7 +179,10 @@ pop <- initPopulation(pop.size = POP_SIZE, chrom.size = CHROM_SIZE)
 
 for(i in 1:GEN_MAX){
   generation[[i]] <- pop
-  pop <- alternate(pop, elite.size = N_ELITE, mutate.prob = MUTATE_PROB)
+  pop <- alternate(pop, 
+                   tournament.size = N_TOURNAMEST,
+                   elite.size = N_ELITE, 
+                   mutate.prob = MUTATE_PROB)
 }
 
 top1 <- NULL
@@ -227,7 +212,7 @@ saveGIF({
     points(x=top5$pheno[1], y=top5$fits[1], col=6, pch=16)
 
     plot(fits~gen, top1, type="b",
-         main = sprintf("generation = %i (diff = %f",
+         main = sprintf("generation = %i (diff = %f)",
                         g, top1$diff[g]))
     abline(h=max(Y), col=3)
     points(x=g, y=top1$fits[g], pch=16,
