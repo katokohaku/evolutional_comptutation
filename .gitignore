@@ -5,3 +5,8 @@
 references/*
 *.html
 *.gif
+*.pptx
+*_files
+*.md
+*_cache
+chap2.Rmd

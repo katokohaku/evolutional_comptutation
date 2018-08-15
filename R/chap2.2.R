@@ -322,7 +322,7 @@ plot.trip <- function(trip, .cities){
 set.seed(7)
 N_CITIES    = 25  # number of cities to travel
 GEN_MAX     = 600  # number of generation
-POP_SIZE    = 50  # population size
+POP_SIZE    = 250  # population size
 N_ELITE     = 5   # number of elite individual for next chromration
 MUTATE_PROB = 1.0 # mutation rate
 
@@ -373,7 +373,7 @@ saveGIF({
     
     par(mfrow = c(1,1))
   }
-}, interval = 0.4, movie.name = "stepGA.gif", ani.width=640, ani.height=320)
+}, interval = 0.1, movie.name = "stepGA.gif", ani.width=640, ani.height=320)
 
 
 print(top1)

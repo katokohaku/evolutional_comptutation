@@ -222,10 +222,8 @@ saveGIF({
     par(mfrow = c(1,1))
     
   }
-}, interval = 1.5, movie.name = "stepGA.gif", ani.width=960, ani.height=480)
+}, interval = 1.0, movie.name = "stepGA.gif", ani.width=960, ani.height=480)
 
-
-bin2dec(rep(1,CHROM_SIZE), norm=F)
 print(top1)
 
 
