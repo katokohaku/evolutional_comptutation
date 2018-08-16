@@ -165,23 +165,23 @@ crossover(chr1, chr2, show.pos = TRUE)
 
 ```{r}
 # mutation (inversion)
-mutation <- function(chrom, mutate.prob =1.0, show.pos=FALSE){
-  stopifnot(length(chrom)>=3)
-  if(runif(1) > mutate.prob){
-    return(chrom)
-  }
+mutation <- function(chrom, mutate.prob =0.05, show.pos = FALSE){
+  stopifnot(length(chrom)>3)
   
-  at <- sample(2:length(chrom), 2)
-  at <- sort(at)
-  chrom[at] <- chrom[rev(at)]
-  if(show.pos == TRUE){
-    print(sprintf("inversion between %i <=> %i", at[1], at[2]))
+  for(i in 2:length(chrom)){
+    if(runif(1) < mutate.prob){
+      base <- setdiff(2:length(chrom), i)
+      at <- c(i, sample(base, 1))
+      if(show.pos == TRUE){
+        cat(sprintf("%i <=> %i  ", at[1], at[2]))
+      }
+      chrom[at] <- chrom[rev(at)]
+    }
   }
   return(chrom)
 }
 # example
-mutation(1:10, show.pos = TRUE)
-mutation(1:3, show.pos = TRUE) # must be [1] 1 3 2
+mutation(1:10, mutate.prob = 0.3, show.pos = TRUE)
 
 ```
 
@@ -198,7 +198,7 @@ printChroms <- function(l){
 ```{r}
 POP_SIZE    = 10  # population size
 N_ELITE     = 2   # number of elite individual for next chromration
-MUTATE_PROB = 0.5 # mutation rate
+MUTATE_PROB = 0.05 # mutation rate
 
 print(factorial(NROW(cities))) > POP_SIZE
 
@@ -394,7 +394,7 @@ N_CITIES    = 10  # number of cities to travel
 GEN_MAX     = 50  # number of generation
 POP_SIZE    = 50  # population size
 N_ELITE     = 3   # number of elite individual for next chromration
-MUTATE_PROB = 1.0 # mutation rate
+MUTATE_PROB = 0.05# mutation rate
 
 factorial(N_CITIES)
 ```
@@ -439,7 +439,7 @@ top1
 ## plot
 
 ```{r, results="hide",message=FALSE,warning=FALSE}
-library("animation")
+library(animation)
 saveGIF({
   
   for(g in 1:length(generation)){
