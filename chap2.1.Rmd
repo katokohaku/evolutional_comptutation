@@ -1,5 +1,5 @@
 ---
-title: "進化計算アルゴリズム入門(R版)"
+title: "Genetic Algorithm for getting max f(x) and argmax(x, f) with R"
 author: "Satoshi Kato"
 date: "`r format(Sys.time(), '%Y/%m/%d')`"
 output:
@@ -21,32 +21,9 @@ editor_options:
   chunk_output_type: inline
 ---
 
-## 目的
+# problem setting
 
-GA for getting argmax(f(x)) 
-[http://www.obitko.com/tutorials/genetic-algorithms/japanese/index.php]
-
-# individual
-
-
-```{r setup, include=FALSE}
-require(dplyr)
-require(magrittr)
-require(foreach)
-# library(igraph)
-knitr::opts_knit$set(progress = TRUE, verbose = TRUE, root.dir = ".")
-```
-
-
-```{r}
-individual <- function(N){
-  sample(c(0,1), N, replace=TRUE)
-}
-# example
-(ind1 <- individual(64))
-
-```
-
+## maximize the fitness function
 
 ```{r}
 fitnessCurve <- function(x){
@@ -60,6 +37,33 @@ Y <- fitnessCurve(X)
 plot(x=X, y=Y, type="l")
 ```
 
+# individual
+
+```{r setup, include=FALSE}
+require(dplyr)
+require(magrittr)
+require(foreach)
+# library(igraph)
+knitr::opts_knit$set(progress = TRUE, verbose = TRUE, root.dir = ".")
+```
+
+
+## encoding 
+
+### genetic representation
+
+```{r}
+individual <- function(N){
+  sample(c(0,1), N, replace=TRUE)
+}
+# example
+(ind1 <- individual(20))
+
+```
+
+### decode to phenotype (-> fitness evaluation)
+
+*phenotype* is input to fitness function.
 
 ```{r}
 bin2dec <- function(chrom, norm = TRUE){
@@ -72,10 +76,16 @@ bin2dec <- function(chrom, norm = TRUE){
   return(dec)
 }
 # example
-(ind1 <- individual(64))
-fitnessCurve( bin2dec(ind1))
+(ind1 <- individual(20))
+(pheno <- bin2dec(ind1))
+fitnessCurve(pheno)
 ```
 
+## genetic operator
+
+### crossover 
+
+In this case, 2-point-crossover is applied.
 
 ```{r}
 crossover <- function(p1, p2, show.pos = FALSE){
@@ -99,6 +109,9 @@ crossover(chr1, chr2, show.pos = FALSE)
 
 ```
 
+### mutation
+
+In this case, single-point-mutation (bit flipping) is applied.
 
 ```{r}
 mutation <- function(chrom, mutate.prob){
@@ -119,6 +132,10 @@ mutation(chr3, 0.05)
 
 
 # population
+
+## simple procedure
+
+init 1st generation -> 2nd generation.
 
 ```{r}
 GEN_MAX     = 15  # number of generation
@@ -165,7 +182,9 @@ nextGen.all
 ```
 
 
-# popuration function
+## functionize
+
+### initialize 1st generation  
 
 ```{r}
 initPopulation <- function(pop.size, chrom.size){
@@ -182,7 +201,7 @@ initPopulation <- function(pop.size, chrom.size){
 # example
 (pop <- initPopulation(pop.size = 20, chrom.size = 32))
 ```
-
+### alternate to next generation
 
 ```{r}
 alternate <- function(population, elite.size = 1, tournament.size = 4, mutate.prob = 0.01){
@@ -220,7 +239,11 @@ alternate <- function(population, elite.size = 1, tournament.size = 4, mutate.pr
 (alternate(pop))
 ```
 
-# exec
+# sample
+
+getting max f(x) and argmax(x, f)
+
+## exec
 
 ```{r}
 set.seed(6)
@@ -248,7 +271,7 @@ Sys.time() - start_time
 ```
 
 
-# eval
+## eval
 ```{r}
 top1 <- NULL
 for(i in 1:length(generation)){
@@ -262,9 +285,9 @@ print(top1)
 ```
 
 
-# animation
+## plot animation
 
-```{r}
+```{r, results="hide", message=FALSE}
 
 library("animation")
 X <- seq(0,1,1e-4); Y=fitnessCurve(X)
@@ -295,7 +318,7 @@ saveGIF({
 }, interval = 1.0, movie.name = "./output/stepGA_maximCurve.gif", ani.width=960, ani.height=480)
 ```
 
-![様子](./output/stepGA_maximCurve.gif)
+![View](./output/stepGA_maximCurve.gif)
 
 
 

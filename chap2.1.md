@@ -1,7 +1,7 @@
 ---
-title: "進化計算アルゴリズム入門(R版)"
+title: "Genetic Algorithm for getting max f(x) and argmax(x, f) with R"
 author: "Satoshi Kato"
-date: "2018/08/15"
+date: "2018/08/19"
 output:
   html_document:
     keep_md: yes
@@ -21,31 +21,9 @@ editor_options:
   chunk_output_type: inline
 ---
 
-## 目的
+# problem setting
 
-GA for getting argmax(f(x)) 
-[http://www.obitko.com/tutorials/genetic-algorithms/japanese/index.php]
-
-# individual
-
-
-
-
-
-
-```r
-individual <- function(N){
-  sample(c(0,1), N, replace=TRUE)
-}
-# example
-(ind1 <- individual(64))
-```
-
-```
-##  [1] 0 1 0 0 0 0 0 1 0 1 1 1 1 0 1 0 0 0 1 1 0 1 1 1 1 0 1 1 1 1 1 1 1 1 0
-## [36] 1 0 0 1 0 1 1 1 0 0 0 0 1 0 0 1 1 1 0 0 1 0 0 0 0 1 0 1 0
-```
-
+## maximize the fitness function
 
 
 ```r
@@ -60,8 +38,33 @@ Y <- fitnessCurve(X)
 plot(x=X, y=Y, type="l")
 ```
 
-![](chap2.1_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
+![](chap2.1_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
 
+# individual
+
+
+
+
+## encoding 
+
+### genetic representation
+
+
+```r
+individual <- function(N){
+  sample(c(0,1), N, replace=TRUE)
+}
+# example
+(ind1 <- individual(20))
+```
+
+```
+##  [1] 1 1 1 0 0 1 1 1 1 0 1 0 1 1 0 0 0 1 1 0
+```
+
+### decode to phenotype (-> fitness evaluation)
+
+*phenotype* is input to fitness function.
 
 
 ```r
@@ -75,22 +78,34 @@ bin2dec <- function(chrom, norm = TRUE){
   return(dec)
 }
 # example
-(ind1 <- individual(64))
+(ind1 <- individual(20))
 ```
 
 ```
-##  [1] 0 0 1 0 1 0 0 0 1 0 1 0 1 1 0 0 1 1 1 1 0 0 1 1 1 0 1 0 0 1 0 0 1 0 0
-## [36] 0 0 0 0 1 0 1 0 0 0 1 1 1 0 0 1 1 1 1 0 1 0 1 0 0 1 0 1 1
+##  [1] 1 1 0 1 0 1 0 0 1 1 1 0 1 1 0 0 1 1 0 0
 ```
 
 ```r
-fitnessCurve( bin2dec(ind1))
+(pheno <- bin2dec(ind1))
 ```
 
 ```
-## [1] 1.443962
+## [1] 0.2009689
 ```
 
+```r
+fitnessCurve(pheno)
+```
+
+```
+## [1] -6.283846
+```
+
+## genetic operator
+
+### crossover 
+
+In this case, 2-point-crossover is applied.
 
 
 ```r
@@ -129,7 +144,7 @@ crossover(chr1, chr2, show.pos = TRUE)
 
 ```
 ## $at
-## [1] 5
+## [1] 2
 ## 
 ## $p1
 ##  [1] 1 1 1 1 1 1 1 1 1 1
@@ -138,7 +153,7 @@ crossover(chr1, chr2, show.pos = TRUE)
 ##  [1] 0 0 0 0 0 0 0 0 0 0
 ## 
 ## $chrom
-##  [1] 1 1 1 1 1 0 0 0 0 0
+##  [1] 1 1 0 0 0 0 0 0 0 0
 ```
 
 ```r
@@ -146,9 +161,12 @@ crossover(chr1, chr2, show.pos = FALSE)
 ```
 
 ```
-##  [1] 1 1 1 1 1 1 1 1 0 0
+##  [1] 1 1 1 1 1 1 0 0 0 0
 ```
 
+### mutation
+
+In this case, single-point-mutation (bit flipping) is applied.
 
 
 ```r
@@ -168,13 +186,17 @@ mutation(chr3, 0.05)
 
 ```
 ##   [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-##  [36] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1
-##  [71] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+##  [36] 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 0
+##  [71] 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1
 ```
 
 
 
 # population
+
+## simple procedure
+
+init 1st generation -> 2nd generation.
 
 
 ```r
@@ -200,13 +222,13 @@ nextInd.elite %>% head %>% print()
 
 ```
 ## # A tibble: 5 x 3
-##   chrom      pheno  fits
-##   <list>     <dbl> <dbl>
-## 1 <dbl [64]> 0.780 5.56 
-## 2 <dbl [64]> 0.775 4.96 
-## 3 <dbl [64]> 0.813 4.29 
-## 4 <dbl [64]> 0.979 1.96 
-## 5 <dbl [64]> 0.653 0.827
+##   chrom       pheno  fits
+##   <list>      <dbl> <dbl>
+## 1 <dbl [64]> 0.701  8.37 
+## 2 <dbl [64]> 0.701  8.31 
+## 3 <dbl [64]> 0.0431 0.838
+## 4 <dbl [64]> 0.911  0.753
+## 5 <dbl [64]> 0.870  0.662
 ```
 
 ```r
@@ -236,22 +258,24 @@ nextGen.all
 
 ```
 ## # A tibble: 10 x 3
-##    chrom      pheno  fits
-##    <list>     <dbl> <dbl>
-##  1 <dbl [64]> 0.780 5.56 
-##  2 <dbl [64]> 0.529 5.40 
-##  3 <dbl [64]> 0.775 4.96 
-##  4 <dbl [64]> 0.775 4.96 
-##  5 <dbl [64]> 0.813 4.29 
-##  6 <dbl [64]> 0.979 1.96 
-##  7 <dbl [64]> 0.980 1.90 
-##  8 <dbl [64]> 0.653 0.827
-##  9 <dbl [64]> 0.655 0.691
-## 10 <dbl [64]> 0.563 0.588
+##    chrom       pheno   fits
+##    <list>      <dbl>  <dbl>
+##  1 <dbl [64]> 0.701   8.37 
+##  2 <dbl [64]> 0.701   8.31 
+##  3 <dbl [64]> 0.0450  1.08 
+##  4 <dbl [64]> 0.0431  0.838
+##  5 <dbl [64]> 0.0431  0.838
+##  6 <dbl [64]> 0.911   0.756
+##  7 <dbl [64]> 0.911   0.753
+##  8 <dbl [64]> 0.911   0.751
+##  9 <dbl [64]> 0.870   0.662
+## 10 <dbl [64]> 0.943  -1.84
 ```
 
 
-# popuration function
+## functionize
+
+### initialize 1st generation  
 
 
 ```r
@@ -272,30 +296,30 @@ initPopulation <- function(pop.size, chrom.size){
 
 ```
 ## # A tibble: 20 x 3
-##    chrom      pheno    fits
-##    <list>     <dbl>   <dbl>
-##  1 <dbl [32]> 0.535  5.41  
-##  2 <dbl [32]> 0.620  4.74  
-##  3 <dbl [32]> 0.611  4.13  
-##  4 <dbl [32]> 0.680  3.04  
-##  5 <dbl [32]> 0.553  2.70  
-##  6 <dbl [32]> 0.881  2.52  
-##  7 <dbl [32]> 0.822  1.65  
-##  8 <dbl [32]> 0.655  0.669 
-##  9 <dbl [32]> 0.913  0.413 
-## 10 <dbl [32]> 0.168 -0.0906
-## 11 <dbl [32]> 0.169 -0.135 
-## 12 <dbl [32]> 0.499 -0.831 
-## 13 <dbl [32]> 0.119 -1.07  
-## 14 <dbl [32]> 0.445 -1.12  
-## 15 <dbl [32]> 0.345 -1.34  
-## 16 <dbl [32]> 0.127 -2.19  
-## 17 <dbl [32]> 0.463 -2.42  
-## 18 <dbl [32]> 0.296 -5.32  
-## 19 <dbl [32]> 0.235 -5.45  
-## 20 <dbl [32]> 0.226 -7.26
+##    chrom       pheno    fits
+##    <list>      <dbl>   <dbl>
+##  1 <dbl [32]> 0.0806  6.68  
+##  2 <dbl [32]> 0.688   5.12  
+##  3 <dbl [32]> 0.743   4.89  
+##  4 <dbl [32]> 0.752   3.68  
+##  5 <dbl [32]> 0.645   1.91  
+##  6 <dbl [32]> 0.986   1.01  
+##  7 <dbl [32]> 0.504   0.395 
+##  8 <dbl [32]> 0.0373  0.391 
+##  9 <dbl [32]> 0.113   0.198 
+## 10 <dbl [32]> 0.163  -0.0983
+## 11 <dbl [32]> 0.499  -0.994 
+## 12 <dbl [32]> 0.454  -1.40  
+## 13 <dbl [32]> 0.145  -1.70  
+## 14 <dbl [32]> 0.358  -2.03  
+## 15 <dbl [32]> 0.277  -2.05  
+## 16 <dbl [32]> 0.239  -4.52  
+## 17 <dbl [32]> 0.231  -6.31  
+## 18 <dbl [32]> 0.384  -7.80  
+## 19 <dbl [32]> 0.404  -8.34  
+## 20 <dbl [32]> 0.388  -8.36
 ```
-
+### alternate to next generation
 
 
 ```r
@@ -335,28 +359,28 @@ alternate <- function(population, elite.size = 1, tournament.size = 4, mutate.pr
 
 ```
 ## # A tibble: 20 x 3
-##    chrom       pheno   fits
-##    <list>      <dbl>  <dbl>
-##  1 <dbl [32]> 0.798   6.60 
-##  2 <dbl [32]> 0.0910  5.71 
-##  3 <dbl [32]> 0.0602  4.05 
-##  4 <dbl [32]> 0.758   3.46 
-##  5 <dbl [32]> 0.512   2.44 
-##  6 <dbl [32]> 0.959   0.598
-##  7 <dbl [32]> 0.502  -0.220
-##  8 <dbl [32]> 0.116  -0.371
-##  9 <dbl [32]> 0.573  -0.646
-## 10 <dbl [32]> 0.120  -1.20 
-## 11 <dbl [32]> 0.345  -1.34 
-## 12 <dbl [32]> 0.353  -1.49 
-## 13 <dbl [32]> 0.182  -1.72 
-## 14 <dbl [32]> 0.249  -2.29 
-## 15 <dbl [32]> 0.332  -2.85 
-## 16 <dbl [32]> 0.370  -4.50 
-## 17 <dbl [32]> 0.419  -5.37 
-## 18 <dbl [32]> 0.300  -5.65 
-## 19 <dbl [32]> 0.414  -6.52 
-## 20 <dbl [32]> 0.222  -7.72
+##    chrom      pheno   fits
+##    <list>     <dbl>  <dbl>
+##  1 <dbl [32]> 0.782  5.88 
+##  2 <dbl [32]> 0.530  5.43 
+##  3 <dbl [32]> 0.514  3.04 
+##  4 <dbl [32]> 0.896  2.94 
+##  5 <dbl [32]> 0.968  1.79 
+##  6 <dbl [32]> 0.670  1.01 
+##  7 <dbl [32]> 0.652  0.980
+##  8 <dbl [32]> 0.502 -0.189
+##  9 <dbl [32]> 0.349 -1.32 
+## 10 <dbl [32]> 0.255 -1.32 
+## 11 <dbl [32]> 0.121 -1.46 
+## 12 <dbl [32]> 0.926 -1.76 
+## 13 <dbl [32]> 0.252 -1.85 
+## 14 <dbl [32]> 0.332 -2.85 
+## 15 <dbl [32]> 0.468 -2.95 
+## 16 <dbl [32]> 0.475 -3.50 
+## 17 <dbl [32]> 0.194 -4.74 
+## 18 <dbl [32]> 0.381 -7.20 
+## 19 <dbl [32]> 0.387 -8.20 
+## 20 <dbl [32]> 0.403 -8.45
 ```
 
 ```r
@@ -365,31 +389,35 @@ alternate <- function(population, elite.size = 1, tournament.size = 4, mutate.pr
 
 ```
 ## # A tibble: 20 x 3
-##    chrom       pheno   fits
-##    <list>      <dbl>  <dbl>
-##  1 <dbl [32]> 0.798   6.60 
-##  2 <dbl [32]> 0.0597  3.93 
-##  3 <dbl [32]> 0.758   3.46 
-##  4 <dbl [32]> 0.758   3.46 
-##  5 <dbl [32]> 0.0531  2.51 
-##  6 <dbl [32]> 0.512   2.44 
-##  7 <dbl [32]> 0.512   2.44 
-##  8 <dbl [32]> 0.967   1.67 
-##  9 <dbl [32]> 0.0479  1.53 
-## 10 <dbl [32]> 0.959   0.598
-## 11 <dbl [32]> 0.959   0.596
-## 12 <dbl [32]> 0.502  -0.188
-## 13 <dbl [32]> 0.115  -0.212
-## 14 <dbl [32]> 0.501  -0.382
-## 15 <dbl [32]> 0.573  -0.646
-## 16 <dbl [32]> 0.573  -0.646
-## 17 <dbl [32]> 0.574  -0.691
-## 18 <dbl [32]> 0.120  -1.19 
-## 19 <dbl [32]> 0.120  -1.20 
-## 20 <dbl [32]> 0.353  -1.49
+##    chrom      pheno   fits
+##    <list>     <dbl>  <dbl>
+##  1 <dbl [32]> 0.782  5.88 
+##  2 <dbl [32]> 0.514  3.08 
+##  3 <dbl [32]> 0.895  3.02 
+##  4 <dbl [32]> 0.896  2.94 
+##  5 <dbl [32]> 0.509  1.63 
+##  6 <dbl [32]> 0.670  1.02 
+##  7 <dbl [32]> 0.670  1.01 
+##  8 <dbl [32]> 0.959  0.528
+##  9 <dbl [32]> 0.502 -0.189
+## 10 <dbl [32]> 0.502 -0.189
+## 11 <dbl [32]> 0.349 -1.30 
+## 12 <dbl [32]> 0.349 -1.32 
+## 13 <dbl [32]> 0.121 -1.46 
+## 14 <dbl [32]> 0.121 -1.46 
+## 15 <dbl [32]> 0.121 -1.46 
+## 16 <dbl [32]> 0.925 -1.70 
+## 17 <dbl [32]> 0.123 -1.73 
+## 18 <dbl [32]> 0.332 -2.85 
+## 19 <dbl [32]> 0.331 -2.92 
+## 20 <dbl [32]> 0.301 -5.74
 ```
 
-# exec
+# sample
+
+getting max f(x) and argmax(x, f)
+
+## exec
 
 
 ```r
@@ -417,11 +445,11 @@ Sys.time() - start_time
 ```
 
 ```
-## Time difference of 2.031412 secs
+## Time difference of 2.526538 secs
 ```
 
 
-# eval
+## eval
 
 ```r
 top1 <- NULL
@@ -459,7 +487,7 @@ print(top1)
 ```
 
 
-# animation
+## plot animation
 
 
 ```r
@@ -492,39 +520,7 @@ saveGIF({
 }, interval = 1.0, movie.name = "./output/stepGA_maximCurve.gif", ani.width=960, ani.height=480)
 ```
 
-```
-## Warning in system(cmd, intern = intern, wait = wait | intern,
-## show.output.on.console = wait, : 命令 'C:\WINDOWS\system32\cmd.exe /c
-## convert --version' の実行は状態 4 を持ちました
-```
-
-```
-## I cannot find ImageMagick with convert = "convert"
-```
-
-```
-## but I can find it from the Registry Hive: C:\ImageMagick-7.0.8-Q16
-```
-
-```
-## Executing: 
-## "C:\ImageMagick-7.0.8-Q16\convert.exe -loop 0 -delay 100
-##     Rplot1.png Rplot2.png Rplot3.png Rplot4.png Rplot5.png
-##     Rplot6.png Rplot7.png Rplot8.png Rplot9.png Rplot10.png
-##     Rplot11.png Rplot12.png Rplot13.png Rplot14.png Rplot15.png
-##     Rplot16.png Rplot17.png Rplot18.png Rplot19.png Rplot20.png
-##     "stepGA_maximCurve.gif""
-```
-
-```
-## Output at: ./output/stepGA_maximCurve.gif
-```
-
-```
-## [1] TRUE
-```
-
-![様子](./output/stepGA_maximCurve.gif)
+![View](./output/stepGA_maximCurve.gif)
 
 
 

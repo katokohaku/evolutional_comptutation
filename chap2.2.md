@@ -1,7 +1,7 @@
 ---
-title: "GA for Travelling salesman problem (TSP) with R"
+title: "Genetic Algorithm for Travelling salesman problem (TSP) with R"
 author: "Satoshi Kato"
-date: "2018/08/18"
+date: "2018/08/19"
 output:
   html_document:
     keep_md: yes
@@ -22,8 +22,13 @@ editor_options:
 ---
 
 
+# problem setting
 
-# location of cities and travel routes
+## Travelling salesman problem (TSP)
+
+["Given a list of cities and the distances between each pair of cities, what is the shortest possible route that visits each city and returns to the origin city?" ](https://en.wikipedia.org/wiki/Travelling_salesman_problem)
+
+### location of cities and travel routes
 
 
 ```r
@@ -52,6 +57,7 @@ setCities <- function(n.cities, mesh = seq(0,1,1e-4)){
 ## 10 10 0.4587 0.3163
 ```
 
+### represent travel route
 
 
 ```r
@@ -62,10 +68,10 @@ travel <- data.frame(id = c(1, sample(2:NROW(cities)))) %>%
 travel <- rbind(travel, travel[1, ])
 ```
 
+### calculate total trip (to be minizimzed)
 
 
 ```r
-## calculate total trip. 
 total.distance <- foreach(i=1:NROW(cities), .combine = sum) %do%({
   from <- travel[i, ]
   to   <-  travel[i+1, ]
@@ -80,10 +86,10 @@ total.distance
 ## [1] 6.012823
 ```
 
+### sample view: route (travelling orders)
 
 
 ```r
-# plot travelling orders
 plot(y~x, travel[-1,], cex=1.5, 
      main = sprintf("total trip = %f", total.distance))
 points(y~x, data=travel[1,], pch=16, col="red", cex=1.5)
@@ -103,20 +109,25 @@ for(i in 1:NROW(cities)){
 
 # individual
 
+## encodeing
+
+### genetic representation
+
 
 ```r
 individual <- function(.cities){
   c(1, sample(2:NROW(.cities)))
 }
 # example
-x1 <- individual(cities)
-paste0(x1, collapse = "-")
+trip <- individual(cities)
+paste0(trip, collapse = "-")
 ```
 
 ```
 ## [1] "1-5-7-3-8-2-9-4-6-10"
 ```
 
+### phnotype & fitness
 
 
 ```r
@@ -140,18 +151,23 @@ fitness <- function(trip, cities){
   return(total.distance)
 }
 # example
-x1 <- individual(cities)
-fitness(x1, cities)
+trip <- individual(cities)
+fitness(trip, cities)
 ```
 
 ```
 ## [1] 6.214204
 ```
 
+## genetic operator
+
+### crossover 
+
+In this case, order-crossover for trip route is applied.
+
 
 
 ```r
-# order crossover
 crossover <- function(p1, p2, show.pos = FALSE){
   len_chrom <- length(p1)
   stopifnot(len_chrom >= 3,
@@ -214,6 +230,9 @@ crossover(chr1, chr2, show.pos = TRUE)
 ##  [1]  1  3 10  8  5  4  9  2  7  6
 ```
 
+### mutation
+
+In this case, inversion (node exchange) is applied as mutation.
 
 
 ```r
@@ -249,13 +268,16 @@ mutation(1:10, mutate.prob = 0.3, show.pos = TRUE)
 
 # population
 
+## simple procedure
+
+init 1st generation -> 2nd generation.
+
 
 ```r
 printChroms <- function(l){
   sapply(l, paste0, collapse = "-") %>% tibble()
 }
 ```
-
 
 
 ```r
@@ -486,7 +508,9 @@ population
 ## 10 <dbl [10]>  6.70
 ```
 
-# popuration function
+## functionise
+
+### initialize 1st generation  
 
 
 ```r
@@ -537,6 +561,8 @@ printChroms(pop$chrom)
 ## 19 1-9-10-7-8-4-3-6-5-2
 ## 20 1-2-5-6-3-8-7-10-4-9
 ```
+
+### alternate to next generation
 
 
 
@@ -626,6 +652,7 @@ alternate <- function(population,  .cities, elite.size, mutate.prob = 0.3){
 ## # ... with 20 more rows
 ```
 
+### plot trip route
 
 
 ```r
@@ -744,7 +771,7 @@ top1
 ## # ... with 40 more rows
 ```
 
-## plot
+## plot animation
 
 
 ```r
@@ -807,7 +834,7 @@ for(i in 1:GEN_MAX){
 Sys.time() - start_time
 ```
 
-# eval & plot
+## eval & plot animation
 
 
 ```r
