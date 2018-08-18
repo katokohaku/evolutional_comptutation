@@ -1,0 +1,50 @@
+---
+title: "進化計算アルゴリズム入門(R版)"
+author: "Satoshi Kato"
+date: "`r format(Sys.time(), '%Y/%m/%d')`"
+output:
+  html_notebook:
+    fig_caption: yes
+    pandoc_args:
+    - --from
+    - markdown+autolink_bare_uris+tex_math_single_backslash-implicit_figures
+    toc: yes
+    toc_depth: 3
+  html_document:
+    fig_caption: yes
+    pandoc_args:
+    - --from
+    - markdown+autolink_bare_uris+tex_math_single_backslash-implicit_figures
+    toc: yes
+    toc_depth: 3
+  word_document:
+    toc: yes
+    toc_depth: 3
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+## 第2章　遺伝的アルゴリズム
+### 目的
+
+（[大谷紀子『進化計算アルゴリズム入門』](https://www.ohmsha.co.jp/book/9784274222382/)）を読みながら、各章のアルゴリズムをRで実装する。第2章では、遺伝的アルゴリズムを使ってフロイド問題を解く。
+
+```{r setup, include=FALSE}
+
+require(tidyverse)
+require(data.table)
+require(magrittr)
+require(foreach)
+
+# library(igraph)
+knitr::opts_knit$set(progress = TRUE, verbose = TRUE, root.dir = ".")
+```
+
+```{r}
+
+
+```
+

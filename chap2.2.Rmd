@@ -1,5 +1,5 @@
 ---
-title: "進化計算アルゴリズム入門(R版)"
+title: "GA for Travelling salesman problem (TSP) with R"
 author: "Satoshi Kato"
 date: "`r format(Sys.time(), '%Y/%m/%d')`"
 output:
@@ -20,10 +20,6 @@ output:
 editor_options: 
   chunk_output_type: inline
 ---
-
-
-# GA for Travelling salesman problem (TSP) 
-[http://www.obitko.com/tutorials/genetic-algorithms/japanese/index.php]
 
 ```{r setup, include=FALSE}
 require(dplyr)
@@ -51,9 +47,9 @@ setCities <- function(n.cities, mesh = seq(0,1,1e-4)){
 ```{r}
 # start from id=1
 travel <- data.frame(id = c(1, sample(2:NROW(cities)))) %>% 
-  left_join(cities, by="id") %>% 
-  slice(c(1:NROW(.), 1))
-travel
+  left_join(cities, by="id")
+
+travel <- rbind(travel, travel[1, ])
 ```
 
 
@@ -107,8 +103,9 @@ fitness <- function(trip, cities){
   stopifnot(length(trip) == NROW(cities))
   
   travel <- data.frame(id = trip) %>% 
-    left_join(cities, by="id") %>% 
-    slice(c(1:NROW(.), 1))
+    left_join(cities, by="id")
+  
+  travel <- rbind(travel, travel[1, ])
   
   total.distance <- foreach(i=1:NROW(cities), .combine = sum) %do%({
     from <- travel[i, ]
@@ -173,7 +170,7 @@ mutation <- function(chrom, mutate.prob =0.05, show.pos = FALSE){
       base <- setdiff(2:length(chrom), i)
       at <- c(i, sample(base, 1))
       if(show.pos == TRUE){
-        cat(sprintf("%i <=> %i  ", at[1], at[2]))
+        cat(sprintf("%i <=> %i \n", at[1], at[2]))
       }
       chrom[at] <- chrom[rev(at)]
     }
@@ -359,8 +356,8 @@ plot.trip <- function(trip, .cities){
             !missing(.cities), 
             NROW(.cities) == length(trip))
   travel <- data.frame(id = trip) %>% 
-    left_join(.cities, by="id") %>% 
-    slice(c(1:NROW(.), 1))
+    left_join(.cities, by="id")
+  travel <- rbind(travel, travel[1, ])
   # print(trip)
   # print(travel)
   
@@ -391,10 +388,10 @@ plot.trip(sample.trip, cities)
 ```{r}
 set.seed(7)
 N_CITIES    = 10  # number of cities to travel
-GEN_MAX     = 50  # number of generation
+GEN_MAX     = 15  # number of generation
 POP_SIZE    = 50  # population size
 N_ELITE     = 3   # number of elite individual for next chromration
-MUTATE_PROB = 0.05# mutation rate
+MUTATE_PROB = 0.1# mutation rate
 
 factorial(N_CITIES)
 ```
@@ -456,21 +453,22 @@ saveGIF({
     par(mfrow = c(1,1))
   }
 }, movie.name = "./output/stepGA_10cities-50steps.gif", 
-interval = 0.3, ani.width=640, ani.height=320)
+interval = 1, ani.width=960, ani.height=480)
 
 ```
 
 ![example1](./output/stepGA_10cities-50steps.gif)
+
 
 # example 2 (large ver.)
 ## exec
 ```{r}
 set.seed(1)
 N_CITIES    = 20  # number of cities to travel
-GEN_MAX     = 400  # number of generation
-POP_SIZE    = 100  # population size
+GEN_MAX     = 350  # number of generation
+POP_SIZE    = 150  # population size
 N_ELITE     = 5   # number of elite individual for next chromration
-MUTATE_PROB = 1.0 # mutation rate
+MUTATE_PROB = 0.05 # mutation rate
 
 factorial(N_CITIES)
 ```
@@ -494,7 +492,7 @@ Sys.time() - start_time
 
 ```
 
-# eval
+# eval & plot
 
 ```{r}
 top1.L <- NULL
@@ -504,14 +502,7 @@ for(i in 1:length(generation.L)){
                              chrom = this$chrom[1], 
                              fits  = this$fits[1]))
 }
-top1.L
 
-```
-
-# plot
-
-```{r, results="hide",message=FALSE,warning=FALSE}
-library("animation")
 saveGIF({
   
   for(g in 1:length(generation.L)){
@@ -527,9 +518,12 @@ saveGIF({
     
     par(mfrow = c(1,1))
   }
-}, movie.name = "./output/stepGA_25cities.gif", 
-interval = 0.1, ani.width=640, ani.height=320)
+}, movie.name = "./output/stepGA_20cities.gif", 
+interval = 0.1, ani.width=960, ani.height=480)
 
 ```
 
-![example2](./output/stepGA_25cities.gif)
+![example2](./output/stepGA_20cities.gif)
+
+
+
