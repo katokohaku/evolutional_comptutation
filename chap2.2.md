@@ -22,9 +22,12 @@ editor_options:
 ---
 
 
+
 # problem setting
 
 ## Travelling salesman problem (TSP)
+
+![example2](./output/stepGA_20cities.gif)
 
 ["Given a list of cities and the distances between each pair of cities, what is the shortest possible route that visits each city and returns to the origin city?" ](https://en.wikipedia.org/wiki/Travelling_salesman_problem)
 

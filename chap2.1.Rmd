@@ -25,10 +25,12 @@ editor_options:
 
 ## maximize the fitness function
 
+![View](./output/stepGA_maximCurve.gif)
+
 ```{r}
 fitnessCurve <- function(x){
   return(
-    2*sin(29*x-1) + 5*sin(1- 8*x) + 3*sin(1- 70*x)
+    2 * sin(29 * x - 1) + 5 * sin(1 - 8 * x) + 3 * sin(1 - 70 * x)
   )
 }
 # example
