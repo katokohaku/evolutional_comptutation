@@ -34,9 +34,15 @@ fitnessCurve <- function(x){
   )
 }
 # example
-X <- seq(0,1,0.001)
-Y <- fitnessCurve(X)
+system.time({
+  X <- seq(0,1,1e-7)
+  Y <- fitnessCurve(X)
+  print( max.x <- X[which.max(Y)])
+  print( max.y <- max(Y))
+  
+})
 plot(x=X, y=Y, type="l")
+points(x=max.x, y = max.y, col="red", pch=16)
 ```
 
 # individual
@@ -87,7 +93,7 @@ fitnessCurve(pheno)
 
 ### crossover 
 
-In this case, 2-point-crossover is applied.
+In this case, single-point-crossover is applied.
 
 ```{r}
 crossover <- function(p1, p2, show.pos = FALSE){
