@@ -109,7 +109,7 @@ paste0(trip, collapse = "-")
 
 ```
 
-### phnotype & fitness
+### phenotype & fitness
 
 ```{r}
 # get total distance
@@ -132,7 +132,7 @@ fitness <- function(trip, cities){
   return(total.distance)
 }
 # example
-trip <- individual(cities)
+(trip <- individual(cities))
 fitness(trip, cities)
 
 ```
@@ -155,20 +155,26 @@ crossover <- function(p1, p2, show.pos = FALSE){
   at <- sort(at)
   
   child <- rep(NA, length(p1))
-  child[1] <- 1
   child[at[1]:at[2]] <- p1[at[1]:at[2]]
   chid.inherit <- child
   
   p2.rot <- p2[c((at[2]+1):length(p2),1:(at[2]))]
-  child.omit <- setdiff(p2, child)
-  child[which(is.na(child))] <- child.omit
+  p2.omit <- setdiff(p2.rot, child)
+  child[which(is.na(child))] <- p2.omit
+  
+  result <- child
+  pos <- which(child == 1)
+  if(pos > 1){
+    result <- child[c(pos:length(child), 1:(pos-1))]  
+  }
   
   if(show.pos){
-    child <- list(at = at, p1 = p1, p2 = p2, 
-                  p1.inherit = chid.inherit, p2.rotated = p2.rot,
-                  p2.omitted = child.omit, new.chrom = child)
+    result <- list(p1 = p1, p2 = p2, at = at, 
+                  p1.inherit = chid.inherit, 
+                  p2.rotated = p2.rot, p2.omitted = p2.omit, 
+                  new.chrom = child, new.chrom.sorted = result)
   }
-  return(child)
+  return(result)
 }
 # example
 chr1 <- individual(cities)
@@ -404,12 +410,15 @@ plot.trip <- function(trip, .cities){
     arrows(x0 = from$x, y0 = from$y, x1 = to$x, y1=to$y, col="blue", 
            length = 0.1, angle = 20)
   }
+  invisible(list(trip = paste0(trip, collapse = "-"), 
+                 travel = travel, total.trip = total.distance))
 }
 # example
 sample.trip <- individual(cities)
 fitness(sample.trip, cities)
-plot.trip(sample.trip, cities)
+this.trip <- plot.trip(sample.trip, cities)
 
+print(this.trip)
 ```
 
 
@@ -483,7 +492,7 @@ saveGIF({
     par(mfrow = c(1,1))
   }
 }, movie.name = "./output/stepGA_10cities-50steps.gif", 
-interval = 1, ani.width=960, ani.height=480)
+interval = 0.7, ani.width=960, ani.height=480)
 
 ```
 
@@ -503,7 +512,7 @@ MUTATE_PROB = 0.05 # mutation rate
 factorial(N_CITIES)
 ```
 
-```{r , results="hide",message=FALSE,warning=FALSE}
+```{r , results="hide",message=FALSE,warning=FALSE,cache=TRUE}
 
 start_time <- Sys.time()
 
@@ -524,7 +533,8 @@ Sys.time() - start_time
 
 ## eval & plot animation
 
-```{r}
+```{r, results="hide",message=FALSE,warning=FALSE}
+
 top1.L <- NULL
 for(i in 1:length(generation.L)){
   this <- generation.L[[i]]
@@ -533,9 +543,11 @@ for(i in 1:length(generation.L)){
                              fits  = this$fits[1]))
 }
 
+pos <- which(!duplicated(top1.L$fits))
+pos <- c(pos, rep(tail(pos,1), 5))
 saveGIF({
   
-  for(g in 1:length(generation.L)){
+  for(g in pos){
     par(mfrow = c(1,2))
     
     this.trip <- unlist(top1.L$chrom[g])
@@ -549,11 +561,81 @@ saveGIF({
     par(mfrow = c(1,1))
   }
 }, movie.name = "./output/stepGA_20cities.gif", 
-interval = 0.1, ani.width=960, ani.height=480)
+interval = 0.8, ani.width=960, ani.height=480)
 
 ```
 
 ![example2](./output/stepGA_20cities.gif)
 
 
+
+# example 3 (more large ver.)
+## exec
+```{r}
+set.seed(1)
+N_CITIES    = 30  # number of cities to travel
+GEN_MAX     = 1000  # number of generation
+POP_SIZE    = 150  # population size
+N_ELITE     = 5   # number of elite individual for next chromration
+MUTATE_PROB = 0.05 # mutation rate
+
+factorial(N_CITIES)
+```
+
+```{r , results="hide",message=FALSE,warning=FALSE,cache=TRUE}
+
+start_time <- Sys.time()
+
+(cities.LL <- setCities(N_CITIES))
+
+generation.LL <- list(NULL)
+(pop <- initPopulation(POP_SIZE, cities.LL))
+for(i in 1:GEN_MAX){
+  print(i)
+  generation.LL[[i]] <- pop
+  pop <- alternate(pop,  cities.LL, 
+                   elite.size  = N_ELITE, 
+                   mutate.prob = MUTATE_PROB)
+}
+Sys.time() - start_time
+
+top1.LL <- NULL
+for(i in 1:length(generation.LL)){
+  this <- generation.LL[[i]]
+  top1.LL <- rbind(top1.LL, tibble(gen=i, 
+                                  chrom = this$chrom[1], 
+                                  fits  = this$fits[1]))
+}
+
+this.trip <- unlist(top1.LL$chrom[g])
+
+```
+
+## eval & plot animation
+
+```{r, results="hide",message=FALSE,warning=FALSE}
+pos <- which(!duplicated(top1.LL$fits))
+pos <- c(pos, rep(tail(pos,1), 5))
+
+saveGIF({
+
+  for(g in pos){
+    par(mfrow = c(1,2))
+
+    this.trip <- unlist(top1.LL$chrom[g])
+    plot.trip(this.trip, cities.LL)
+
+    plot(fits~gen, top1.LL, type="b",
+         main = sprintf("generation = %i (fits = %f)", g, top1.LL$fits[g]))
+    points(x=g, y=top1.LL$fits[g], pch=16, col="red", cex=1.5)
+    # top1;max(Y)
+
+    par(mfrow = c(1,1))
+  }
+}, movie.name = "./output/stepGA_30cities.gif",
+interval = 0.8, ani.width=960, ani.height=480)
+
+```
+
+![example3](./output/stepGA_30cities.gif)
 

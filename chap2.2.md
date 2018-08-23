@@ -1,7 +1,7 @@
 ---
 title: "Genetic Algorithm for Travelling salesman problem (TSP) with R"
 author: "Satoshi Kato"
-date: "2018/08/19"
+date: "2018/08/23"
 output:
   html_document:
     keep_md: yes
@@ -130,7 +130,7 @@ paste0(trip, collapse = "-")
 ## [1] "1-5-7-3-8-2-9-4-6-10"
 ```
 
-### phnotype & fitness
+### phenotype & fitness
 
 
 ```r
@@ -154,7 +154,14 @@ fitness <- function(trip, cities){
   return(total.distance)
 }
 # example
-trip <- individual(cities)
+(trip <- individual(cities))
+```
+
+```
+##  [1]  1  9  5  7  4 10  3  8  2  6
+```
+
+```r
 fitness(trip, cities)
 ```
 
@@ -181,20 +188,26 @@ crossover <- function(p1, p2, show.pos = FALSE){
   at <- sort(at)
   
   child <- rep(NA, length(p1))
-  child[1] <- 1
   child[at[1]:at[2]] <- p1[at[1]:at[2]]
   chid.inherit <- child
   
   p2.rot <- p2[c((at[2]+1):length(p2),1:(at[2]))]
-  child.omit <- setdiff(p2, child)
-  child[which(is.na(child))] <- child.omit
+  p2.omit <- setdiff(p2.rot, child)
+  child[which(is.na(child))] <- p2.omit
+  
+  result <- child
+  pos <- which(child == 1)
+  if(pos > 1){
+    result <- child[c(pos:length(child), 1:(pos-1))]  
+  }
   
   if(show.pos){
-    child <- list(at = at, p1 = p1, p2 = p2, 
-                  p1.inherit = chid.inherit, p2.rotated = p2.rot,
-                  p2.omitted = child.omit, new.chrom = child)
+    result <- list(p1 = p1, p2 = p2, at = at, 
+                  p1.inherit = chid.inherit, 
+                  p2.rotated = p2.rot, p2.omitted = p2.omit, 
+                  new.chrom = child, new.chrom.sorted = result)
   }
-  return(child)
+  return(result)
 }
 # example
 chr1 <- individual(cities)
@@ -211,26 +224,29 @@ crossover(chr1, chr2, show.pos = TRUE)
 ```
 
 ```
-## $at
-## [1] 4 5
-## 
 ## $p1
 ##  [1]  1  9 10  8  5  7  6  3  4  2
 ## 
 ## $p2
 ##  [1]  1  3 10  4  9  2  8  5  7  6
 ## 
+## $at
+## [1] 4 5
+## 
 ## $p1.inherit
-##  [1]  1 NA NA  8  5 NA NA NA NA NA
+##  [1] NA NA NA  8  5 NA NA NA NA NA
 ## 
 ## $p2.rotated
 ##  [1]  2  8  5  7  6  1  3 10  4  9
 ## 
 ## $p2.omitted
-## [1]  3 10  4  9  2  7  6
+## [1]  2  7  6  1  3 10  4  9
 ## 
 ## $new.chrom
-##  [1]  1  3 10  8  5  4  9  2  7  6
+##  [1]  2  7  6  8  5  1  3 10  4  9
+## 
+## $new.chrom.sorted
+##  [1]  1  3 10  4  9  2  7  6  8  5
 ```
 
 ### mutation
@@ -449,13 +465,13 @@ printChroms(chrom)
 ##   .                   
 ##   <chr>               
 ## 1 1-3-10-2-7-8-9-4-6-5
-## 2 1-10-3-6-7-8-9-2-5-4
-## 3 1-4-6-10-8-3-5-2-7-9
-## 4 1-5-4-8-9-2-7-3-10-6
-## 5 1-5-10-3-4-2-7-8-9-6
-## 6 1-5-4-2-7-8-9-3-10-6
-## 7 1-8-7-9-6-5-10-4-3-2
-## 8 1-9-3-4-8-10-5-7-2-6
+## 2 1-10-7-8-9-3-6-2-5-4
+## 3 1-4-8-3-5-2-6-10-7-9
+## 4 1-5-2-7-4-8-9-3-10-6
+## 5 1-5-4-2-7-8-10-3-9-6
+## 6 1-3-10-5-4-2-7-8-9-6
+## 7 1-8-7-6-5-10-4-3-9-2
+## 8 1-9-3-4-5-7-8-10-2-6
 ```
 
 ```r
@@ -468,7 +484,7 @@ all.equal(chrom, nextInd.gen$chrom)
 
 ```
 ## [1] "Component 1: Mean relative difference: 0.1176471"
-## [2] "Component 6: Mean relative difference: 0.4"
+## [2] "Component 6: Mean relative difference: 0.4615385"
 ```
 
 ```r
@@ -478,13 +494,13 @@ cbind(chrom = printChroms(chrom), nextInd = printChroms(nextInd.gen$chrom))
 ```
 ##                      .                    .
 ## 1 1-3-10-2-7-8-9-4-6-5 1-3-10-2-7-9-8-4-6-5
-## 2 1-10-3-6-7-8-9-2-5-4 1-10-3-6-7-8-9-2-5-4
-## 3 1-4-6-10-8-3-5-2-7-9 1-4-6-10-8-3-5-2-7-9
-## 4 1-5-4-8-9-2-7-3-10-6 1-5-4-8-9-2-7-3-10-6
-## 5 1-5-10-3-4-2-7-8-9-6 1-5-10-3-4-2-7-8-9-6
-## 6 1-5-4-2-7-8-9-3-10-6 1-5-4-3-7-8-9-2-10-6
-## 7 1-8-7-9-6-5-10-4-3-2 1-8-7-9-6-5-10-4-3-2
-## 8 1-9-3-4-8-10-5-7-2-6 1-9-3-4-8-10-5-7-2-6
+## 2 1-10-7-8-9-3-6-2-5-4 1-10-7-8-9-3-6-2-5-4
+## 3 1-4-8-3-5-2-6-10-7-9 1-4-8-3-5-2-6-10-7-9
+## 4 1-5-2-7-4-8-9-3-10-6 1-5-2-7-4-8-9-3-10-6
+## 5 1-5-4-2-7-8-10-3-9-6 1-5-4-2-7-8-10-3-9-6
+## 6 1-3-10-5-4-2-7-8-9-6 1-3-10-8-4-2-7-5-9-6
+## 7 1-8-7-6-5-10-4-3-9-2 1-8-7-6-5-10-4-3-9-2
+## 8 1-9-3-4-5-7-8-10-2-6 1-9-3-4-5-7-8-10-2-6
 ```
 
 ```r
@@ -500,15 +516,15 @@ population
 ##    chrom       fits
 ##    <list>     <dbl>
 ##  1 <dbl [10]>  5.14
-##  2 <dbl [10]>  5.35
-##  3 <dbl [10]>  5.40
-##  4 <dbl [10]>  5.42
-##  5 <dbl [10]>  6.10
-##  6 <dbl [10]>  6.29
-##  7 <dbl [10]>  6.32
-##  8 <dbl [10]>  6.43
-##  9 <dbl [10]>  6.48
-## 10 <dbl [10]>  6.70
+##  2 <dbl [10]>  5.19
+##  3 <dbl [10]>  5.32
+##  4 <dbl [10]>  5.34
+##  5 <dbl [10]>  5.42
+##  6 <dbl [10]>  5.72
+##  7 <dbl [10]>  5.82
+##  8 <dbl [10]>  5.97
+##  9 <dbl [10]>  6.12
+## 10 <dbl [10]>  6.32
 ```
 
 ## functionise
@@ -642,16 +658,16 @@ alternate <- function(population,  .cities, elite.size, mutate.prob = 0.3){
 ## # A tibble: 30 x 2
 ##    chrom       fits
 ##    <list>     <dbl>
-##  1 <dbl [10]>  4.54
-##  2 <dbl [10]>  4.65
-##  3 <dbl [10]>  4.76
-##  4 <dbl [10]>  4.77
-##  5 <dbl [10]>  4.81
-##  6 <dbl [10]>  5.12
-##  7 <dbl [10]>  5.27
-##  8 <dbl [10]>  5.27
-##  9 <dbl [10]>  5.37
-## 10 <dbl [10]>  5.48
+##  1 <dbl [10]>  4.43
+##  2 <dbl [10]>  4.54
+##  3 <dbl [10]>  4.65
+##  4 <dbl [10]>  4.72
+##  5 <dbl [10]>  4.74
+##  6 <dbl [10]>  4.76
+##  7 <dbl [10]>  4.77
+##  8 <dbl [10]>  5.11
+##  9 <dbl [10]>  5.12
+## 10 <dbl [10]>  5.24
 ## # ... with 20 more rows
 ```
 
@@ -682,6 +698,8 @@ plot.trip <- function(trip, .cities){
     arrows(x0 = from$x, y0 = from$y, x1 = to$x, y1=to$y, col="blue", 
            length = 0.1, angle = 20)
   }
+  invisible(list(trip = paste0(trip, collapse = "-"), 
+                 travel = travel, total.trip = total.distance))
 }
 # example
 sample.trip <- individual(cities)
@@ -693,10 +711,36 @@ fitness(sample.trip, cities)
 ```
 
 ```r
-plot.trip(sample.trip, cities)
+this.trip <- plot.trip(sample.trip, cities)
 ```
 
 ![](chap2.2_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+```r
+print(this.trip)
+```
+
+```
+## $trip
+## [1] "1-4-3-7-9-2-5-6-8-10"
+## 
+## $travel
+##    id      x      y
+## 1   1 0.0000 0.0000
+## 2   4 0.0697 0.0962
+## 3   3 0.1156 0.7727
+## 4   7 0.3398 0.5603
+## 5   9 0.1657 0.9850
+## 6   2 0.3977 0.2314
+## 7   5 0.2436 0.4533
+## 8   6 0.7916 0.0846
+## 9   8 0.9714 0.0086
+## 10 10 0.4587 0.3163
+## 11  1 0.0000 0.0000
+## 
+## $total.trip
+## [1] 4.634169
+```
 
 
 # example 1
@@ -758,20 +802,24 @@ top1
 ```
 
 ```
-## # A tibble: 50 x 3
+## # A tibble: 15 x 3
 ##      gen chrom       fits
 ##    <int> <list>     <dbl>
 ##  1     1 <dbl [10]>  4.71
-##  2     2 <dbl [10]>  4.41
-##  3     3 <dbl [10]>  4.41
-##  4     4 <dbl [10]>  4.07
-##  5     5 <dbl [10]>  4.01
-##  6     6 <dbl [10]>  4.01
-##  7     7 <dbl [10]>  4.01
-##  8     8 <dbl [10]>  4.01
-##  9     9 <dbl [10]>  3.64
-## 10    10 <dbl [10]>  3.64
-## # ... with 40 more rows
+##  2     2 <dbl [10]>  4.44
+##  3     3 <dbl [10]>  4.17
+##  4     4 <dbl [10]>  4.12
+##  5     5 <dbl [10]>  3.72
+##  6     6 <dbl [10]>  3.72
+##  7     7 <dbl [10]>  3.72
+##  8     8 <dbl [10]>  3.72
+##  9     9 <dbl [10]>  3.72
+## 10    10 <dbl [10]>  3.56
+## 11    11 <dbl [10]>  3.56
+## 12    12 <dbl [10]>  3.56
+## 13    13 <dbl [10]>  3.56
+## 14    14 <dbl [10]>  3.56
+## 15    15 <dbl [10]>  3.56
 ```
 
 ## plot animation
@@ -795,7 +843,7 @@ saveGIF({
     par(mfrow = c(1,1))
   }
 }, movie.name = "./output/stepGA_10cities-50steps.gif", 
-interval = 1, ani.width=960, ani.height=480)
+interval = 0.7, ani.width=960, ani.height=480)
 ```
 
 ![example1](./output/stepGA_10cities-50steps.gif)
@@ -849,9 +897,11 @@ for(i in 1:length(generation.L)){
                              fits  = this$fits[1]))
 }
 
+pos <- which(!duplicated(top1.L$fits))
+pos <- c(pos, rep(tail(pos,1), 5))
 saveGIF({
   
-  for(g in 1:length(generation.L)){
+  for(g in pos){
     par(mfrow = c(1,2))
     
     this.trip <- unlist(top1.L$chrom[g])
@@ -865,106 +915,86 @@ saveGIF({
     par(mfrow = c(1,1))
   }
 }, movie.name = "./output/stepGA_20cities.gif", 
-interval = 0.1, ani.width=960, ani.height=480)
-```
-
-```
-## Executing: 
-## "convert -loop 0 -delay 10 Rplot1.png Rplot2.png Rplot3.png
-##     Rplot4.png Rplot5.png Rplot6.png Rplot7.png Rplot8.png
-##     Rplot9.png Rplot10.png Rplot11.png Rplot12.png Rplot13.png
-##     Rplot14.png Rplot15.png Rplot16.png Rplot17.png Rplot18.png
-##     Rplot19.png Rplot20.png Rplot21.png Rplot22.png Rplot23.png
-##     Rplot24.png Rplot25.png Rplot26.png Rplot27.png Rplot28.png
-##     Rplot29.png Rplot30.png Rplot31.png Rplot32.png Rplot33.png
-##     Rplot34.png Rplot35.png Rplot36.png Rplot37.png Rplot38.png
-##     Rplot39.png Rplot40.png Rplot41.png Rplot42.png Rplot43.png
-##     Rplot44.png Rplot45.png Rplot46.png Rplot47.png Rplot48.png
-##     Rplot49.png Rplot50.png Rplot51.png Rplot52.png Rplot53.png
-##     Rplot54.png Rplot55.png Rplot56.png Rplot57.png Rplot58.png
-##     Rplot59.png Rplot60.png Rplot61.png Rplot62.png Rplot63.png
-##     Rplot64.png Rplot65.png Rplot66.png Rplot67.png Rplot68.png
-##     Rplot69.png Rplot70.png Rplot71.png Rplot72.png Rplot73.png
-##     Rplot74.png Rplot75.png Rplot76.png Rplot77.png Rplot78.png
-##     Rplot79.png Rplot80.png Rplot81.png Rplot82.png Rplot83.png
-##     Rplot84.png Rplot85.png Rplot86.png Rplot87.png Rplot88.png
-##     Rplot89.png Rplot90.png Rplot91.png Rplot92.png Rplot93.png
-##     Rplot94.png Rplot95.png Rplot96.png Rplot97.png Rplot98.png
-##     Rplot99.png Rplot100.png Rplot101.png Rplot102.png
-##     Rplot103.png Rplot104.png Rplot105.png Rplot106.png
-##     Rplot107.png Rplot108.png Rplot109.png Rplot110.png
-##     Rplot111.png Rplot112.png Rplot113.png Rplot114.png
-##     Rplot115.png Rplot116.png Rplot117.png Rplot118.png
-##     Rplot119.png Rplot120.png Rplot121.png Rplot122.png
-##     Rplot123.png Rplot124.png Rplot125.png Rplot126.png
-##     Rplot127.png Rplot128.png Rplot129.png Rplot130.png
-##     Rplot131.png Rplot132.png Rplot133.png Rplot134.png
-##     Rplot135.png Rplot136.png Rplot137.png Rplot138.png
-##     Rplot139.png Rplot140.png Rplot141.png Rplot142.png
-##     Rplot143.png Rplot144.png Rplot145.png Rplot146.png
-##     Rplot147.png Rplot148.png Rplot149.png Rplot150.png
-##     Rplot151.png Rplot152.png Rplot153.png Rplot154.png
-##     Rplot155.png Rplot156.png Rplot157.png Rplot158.png
-##     Rplot159.png Rplot160.png Rplot161.png Rplot162.png
-##     Rplot163.png Rplot164.png Rplot165.png Rplot166.png
-##     Rplot167.png Rplot168.png Rplot169.png Rplot170.png
-##     Rplot171.png Rplot172.png Rplot173.png Rplot174.png
-##     Rplot175.png Rplot176.png Rplot177.png Rplot178.png
-##     Rplot179.png Rplot180.png Rplot181.png Rplot182.png
-##     Rplot183.png Rplot184.png Rplot185.png Rplot186.png
-##     Rplot187.png Rplot188.png Rplot189.png Rplot190.png
-##     Rplot191.png Rplot192.png Rplot193.png Rplot194.png
-##     Rplot195.png Rplot196.png Rplot197.png Rplot198.png
-##     Rplot199.png Rplot200.png Rplot201.png Rplot202.png
-##     Rplot203.png Rplot204.png Rplot205.png Rplot206.png
-##     Rplot207.png Rplot208.png Rplot209.png Rplot210.png
-##     Rplot211.png Rplot212.png Rplot213.png Rplot214.png
-##     Rplot215.png Rplot216.png Rplot217.png Rplot218.png
-##     Rplot219.png Rplot220.png Rplot221.png Rplot222.png
-##     Rplot223.png Rplot224.png Rplot225.png Rplot226.png
-##     Rplot227.png Rplot228.png Rplot229.png Rplot230.png
-##     Rplot231.png Rplot232.png Rplot233.png Rplot234.png
-##     Rplot235.png Rplot236.png Rplot237.png Rplot238.png
-##     Rplot239.png Rplot240.png Rplot241.png Rplot242.png
-##     Rplot243.png Rplot244.png Rplot245.png Rplot246.png
-##     Rplot247.png Rplot248.png Rplot249.png Rplot250.png
-##     Rplot251.png Rplot252.png Rplot253.png Rplot254.png
-##     Rplot255.png Rplot256.png Rplot257.png Rplot258.png
-##     Rplot259.png Rplot260.png Rplot261.png Rplot262.png
-##     Rplot263.png Rplot264.png Rplot265.png Rplot266.png
-##     Rplot267.png Rplot268.png Rplot269.png Rplot270.png
-##     Rplot271.png Rplot272.png Rplot273.png Rplot274.png
-##     Rplot275.png Rplot276.png Rplot277.png Rplot278.png
-##     Rplot279.png Rplot280.png Rplot281.png Rplot282.png
-##     Rplot283.png Rplot284.png Rplot285.png Rplot286.png
-##     Rplot287.png Rplot288.png Rplot289.png Rplot290.png
-##     Rplot291.png Rplot292.png Rplot293.png Rplot294.png
-##     Rplot295.png Rplot296.png Rplot297.png Rplot298.png
-##     Rplot299.png Rplot300.png Rplot301.png Rplot302.png
-##     Rplot303.png Rplot304.png Rplot305.png Rplot306.png
-##     Rplot307.png Rplot308.png Rplot309.png Rplot310.png
-##     Rplot311.png Rplot312.png Rplot313.png Rplot314.png
-##     Rplot315.png Rplot316.png Rplot317.png Rplot318.png
-##     Rplot319.png Rplot320.png Rplot321.png Rplot322.png
-##     Rplot323.png Rplot324.png Rplot325.png Rplot326.png
-##     Rplot327.png Rplot328.png Rplot329.png Rplot330.png
-##     Rplot331.png Rplot332.png Rplot333.png Rplot334.png
-##     Rplot335.png Rplot336.png Rplot337.png Rplot338.png
-##     Rplot339.png Rplot340.png Rplot341.png Rplot342.png
-##     Rplot343.png Rplot344.png Rplot345.png Rplot346.png
-##     Rplot347.png Rplot348.png Rplot349.png Rplot350.png
-##     "stepGA_20cities.gif""
-```
-
-```
-## Output at: ./output/stepGA_20cities.gif
-```
-
-```
-## [1] TRUE
+interval = 0.8, ani.width=960, ani.height=480)
 ```
 
 ![example2](./output/stepGA_20cities.gif)
 
 
+
+# example 3 (more large ver.)
+## exec
+
+```r
+set.seed(1)
+N_CITIES    = 30  # number of cities to travel
+GEN_MAX     = 1000  # number of generation
+POP_SIZE    = 150  # population size
+N_ELITE     = 5   # number of elite individual for next chromration
+MUTATE_PROB = 0.05 # mutation rate
+
+factorial(N_CITIES)
+```
+
+```
+## [1] 2.652529e+32
+```
+
+
+```r
+start_time <- Sys.time()
+
+(cities.LL <- setCities(N_CITIES))
+
+generation.LL <- list(NULL)
+(pop <- initPopulation(POP_SIZE, cities.LL))
+for(i in 1:GEN_MAX){
+  print(i)
+  generation.LL[[i]] <- pop
+  pop <- alternate(pop,  cities.LL, 
+                   elite.size  = N_ELITE, 
+                   mutate.prob = MUTATE_PROB)
+}
+Sys.time() - start_time
+
+top1.LL <- NULL
+for(i in 1:length(generation.LL)){
+  this <- generation.LL[[i]]
+  top1.LL <- rbind(top1.LL, tibble(gen=i, 
+                                  chrom = this$chrom[1], 
+                                  fits  = this$fits[1]))
+}
+
+this.trip <- unlist(top1.LL$chrom[g])
+plot.trip(this.trip, cities.LL)
+```
+
+![](chap2.2_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+
+## eval & plot animation
+
+
+```r
+pos <- which(!duplicated(top1.LL$fits))
+pos <- c(pos, rep(tail(pos,1), 5))
+saveGIF({
+
+  for(g in pos){
+    par(mfrow = c(1,2))
+
+    this.trip <- unlist(top1.LL$chrom[g])
+    plot.trip(this.trip, cities.LL)
+
+    plot(fits~gen, top1.LL, type="b",
+         main = sprintf("generation = %i (fits = %f)", g, top1.LL$fits[g]))
+    points(x=g, y=top1.LL$fits[g], pch=16, col="red", cex=1.5)
+    # top1;max(Y)
+
+    par(mfrow = c(1,1))
+  }
+}, movie.name = "./output/stepGA_30cities.gif",
+interval = 0.8, ani.width=960, ani.height=480)
+```
+
+![example2](./output/stepGA_30cities.gif)
 
